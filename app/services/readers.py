@@ -102,6 +102,17 @@ def _parse_kml_coordinates(coords_text: str | None) -> list[tuple[float, ...]]:
     return coords
 
 
+def _find_elem(
+    parent: ET.Element, *queries: str, ns: dict[str, str] | None = None
+) -> ET.Element | None:
+    """Safely find sub-element avoiding ElementTree boolean truthiness pitfall."""
+    for q in queries:
+        el = parent.find(q, ns) if ns else parent.find(q)
+        if el is not None:
+            return el
+    return None
+
+
 def _xml_parse_geometry(elem: ET.Element, ns: dict[str, str]) -> BaseGeometry | None:
     """
     Fallback geometry parser using XML ElementTree for Point, LineString, Polygon, MultiGeometry.
@@ -110,7 +121,7 @@ def _xml_parse_geometry(elem: ET.Element, ns: dict[str, str]) -> BaseGeometry | 
     tag = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
 
     if tag == "Point":
-        coords_el = elem.find(".//coordinates", ns) or elem.find(".//{*}coordinates")
+        coords_el = _find_elem(elem, ".//{*}coordinates", ".//coordinates", ns=ns)
         if coords_el is not None and coords_el.text:
             coords = _parse_kml_coordinates(coords_el.text)
             if coords:
@@ -118,7 +129,7 @@ def _xml_parse_geometry(elem: ET.Element, ns: dict[str, str]) -> BaseGeometry | 
         return None
 
     if tag == "LineString":
-        coords_el = elem.find(".//coordinates", ns) or elem.find(".//{*}coordinates")
+        coords_el = _find_elem(elem, ".//{*}coordinates", ".//coordinates", ns=ns)
         if coords_el is not None and coords_el.text:
             coords = _parse_kml_coordinates(coords_el.text)
             if len(coords) >= 2:
@@ -126,16 +137,20 @@ def _xml_parse_geometry(elem: ET.Element, ns: dict[str, str]) -> BaseGeometry | 
         return None
 
     if tag == "Polygon":
-        outer_el = elem.find(".//outerBoundaryIs//coordinates", ns) or elem.find(
-            ".//{*}outerBoundaryIs//{*}coordinates"
+        outer_el = _find_elem(
+            elem,
+            ".//{*}outerBoundaryIs//{*}coordinates",
+            ".//outerBoundaryIs//coordinates",
+            ns=ns,
         )
         if outer_el is not None and outer_el.text:
             exterior_coords = _parse_kml_coordinates(outer_el.text)
             if len(exterior_coords) >= 3:
                 inner_coords: list[list[tuple[float, ...]]] = []
-                for inner_el in elem.findall(".//innerBoundaryIs//coordinates", ns) or elem.findall(
-                    ".//{*}innerBoundaryIs//{*}coordinates"
-                ):
+                inner_els = elem.findall(".//{*}innerBoundaryIs//{*}coordinates", ns)
+                if not inner_els:
+                    inner_els = elem.findall(".//innerBoundaryIs//coordinates", ns)
+                for inner_el in inner_els:
                     if inner_el.text:
                         hole = _parse_kml_coordinates(inner_el.text)
                         if len(hole) >= 3:
@@ -184,8 +199,8 @@ def read_kml_fallback(kml_path: Path) -> list[Feature]:
         placemarks = root.findall(".//Placemark")
 
     for pm in placemarks:
-        name_el = pm.find("{*}name") or pm.find("name")
-        desc_el = pm.find("{*}description") or pm.find("description")
+        name_el = _find_elem(pm, "{*}name", "name")
+        desc_el = _find_elem(pm, "{*}description", "description")
         props: dict[str, Any] = {}
         if name_el is not None and name_el.text:
             props["name"] = name_el.text.strip()
@@ -194,7 +209,7 @@ def read_kml_fallback(kml_path: Path) -> list[Feature]:
 
         geom: BaseGeometry | None = None
         for tag in ("Polygon", "LineString", "Point", "MultiGeometry"):
-            g_el = pm.find(f"{{*}}{tag}") or pm.find(tag)
+            g_el = _find_elem(pm, f"{{*}}{tag}", tag)
             if g_el is not None:
                 geom = _xml_parse_geometry(g_el, {})
                 break
@@ -257,7 +272,7 @@ def read_shapefiles(shp_paths: list[Path]) -> DatasetReadResult:
                 break
 
         if not prj_found:
-            warning_msg = "No .prj found; assumed EPSG:4326"
+            warning_msg = "No .prj found; assumed EPSG:4326 (defaulted to EPSG:4326)"
             if warning_msg not in file_warnings:
                 file_warnings.append(warning_msg)
 
