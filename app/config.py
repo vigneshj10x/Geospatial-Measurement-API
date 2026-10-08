@@ -23,8 +23,8 @@ class Settings(BaseModel):
     # Security & resource guardrails
     MAX_UPLOAD_SIZE_BYTES: int = Field(
         default_factory=lambda: int(
-            os.getenv("MAX_UPLOAD_SIZE_BYTES", str(25 * 1024 * 1024))
-        )  # 25 MB
+            os.getenv("MAX_UPLOAD_SIZE_BYTES", str(50 * 1024 * 1024))
+        )  # 50 MB
     )
     MAX_UNCOMPRESSED_SIZE_BYTES: int = Field(
         default_factory=lambda: int(
