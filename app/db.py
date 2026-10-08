@@ -46,5 +46,12 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db() -> None:
-    """Create database tables for all registered models."""
+    """
+    Create database tables on startup.
+
+    Note on Schema Evolution (Future Scope):
+    Base.metadata.create_all is ideal for rapid development and testing.
+    In production environments, Alembic migrations should be used for zero-downtime
+    DDL versioning and rollback capability.
+    """
     Base.metadata.create_all(bind=engine)

@@ -1,34 +1,19 @@
-"""SQLAlchemy 2.x models for file and geospatial feature records."""
+"""SQLAlchemy 2.x models for uploaded files and spatial feature records."""
 
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
 
-class TimestampMixin:
-    """Provides UTC timestamps for created_at and updated_at."""
+class UploadedFile(Base):
+    """Represents an uploaded geospatial dataset and its processing lifecycle."""
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
-
-
-class FileRecord(Base, TimestampMixin):
-    """Represents an uploaded geospatial archive or file and its processing status."""
-
-    __tablename__ = "files"
+    __tablename__ = "uploaded_files"
 
     id: Mapped[str] = mapped_column(
         String(36),
@@ -36,31 +21,43 @@ class FileRecord(Base, TimestampMixin):
         default=lambda: str(uuid.uuid4()),
     )
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
-    file_format: Mapped[str] = mapped_column(String(50), nullable=False)
-    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    feature_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    crs: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    file_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="pending",
+        default="PENDING",
         index=True,
-    )
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    )  # 'PENDING', 'PROCESSING', 'COMPLETED', 'PARTIAL', 'FAILED'
+    crs: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    feature_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    warnings: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     storage_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+    processed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    # Cascade delete child feature records when uploaded file is deleted
     features: Mapped[list["FeatureRecord"]] = relationship(
         "FeatureRecord",
-        back_populates="file_record",
+        back_populates="uploaded_file",
         cascade="all, delete-orphan",
-        order_by="FeatureRecord.feature_index",
+        order_by="FeatureRecord.idx",
     )
 
 
-class FeatureRecord(Base, TimestampMixin):
+class FeatureRecord(Base):
     """Stores individual geometry feature data, properties, and computed measurements."""
 
-    __tablename__ = "features"
+    __tablename__ = "feature_records"
 
     id: Mapped[str] = mapped_column(
         String(36),
@@ -69,30 +66,32 @@ class FeatureRecord(Base, TimestampMixin):
     )
     file_id: Mapped[str] = mapped_column(
         String(36),
-        ForeignKey("files.id", ondelete="CASCADE"),
+        ForeignKey("uploaded_files.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    feature_index: Mapped[int] = mapped_column(Integer, nullable=False)
-    feature_identifier: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    idx: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_layer: Mapped[str] = mapped_column(String(100), nullable=False, default="default")
     geometry_type: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    geometry_geojson: Mapped[str] = mapped_column(Text, nullable=False)
-    properties_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
-
-    source_crs: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    projected_crs: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    measurements_json: Mapped[str | None] = mapped_column(Text, nullable=True)
-    warnings_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # GeoJSON representation in ORIGINAL CRS
+    geometry: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    properties: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="measured",
+        default="OK",
         index=True,
-    )
+    )  # 'OK', 'SKIPPED', 'ERROR'
+    warnings: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    measurement: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
-    file_record: Mapped["FileRecord"] = relationship(
-        "FileRecord",
+    uploaded_file: Mapped["UploadedFile"] = relationship(
+        "UploadedFile",
         back_populates="features",
     )
+
+
+# Backward compatibility alias
+FileRecord = UploadedFile
