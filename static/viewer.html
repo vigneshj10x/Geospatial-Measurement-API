@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geospatial Measurement Engine - Map Viewer</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-surface: #1e293b;
+      --bg-card: rgba(30, 41, 59, 0.85);
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --poly-color: #10b981;
+      --line-color: #0ea5e9;
+      --point-color: #a855f7;
+      --error-color: #ef4444;
+      --warn-color: #f59e0b;
+      --skip-color: #64748b;
+      --radius: 12px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar Layout */
+    #sidebar {
+      width: 440px;
+      min-width: 360px;
+      background-color: var(--bg-surface);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .sidebar-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 0.9) 100%);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .sidebar-content {
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius);
+      padding: 24px 16px;
+      text-align: center;
+      background-color: rgba(15, 23, 42, 0.4);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary);
+      background-color: rgba(59, 130, 246, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .upload-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .upload-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .upload-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    /* Unit Selector Controls */
+    .unit-controls {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+
+    .control-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .unit-button-group {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .unit-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .unit-btn:hover {
+      background: #334155;
+      color: var(--text-main);
+    }
+
+    .unit-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Summary Dashboard Card */
+    .summary-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .stat-name {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-size: 0.92rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metric-big {
+      font-size: 1.15rem;
+      color: #38bdf8;
+    }
+
+    /* Status Badges */
+    .badge-container {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+
+    .badge-ok {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-skipped {
+      background: rgba(100, 116, 139, 0.2);
+      color: #94a3b8;
+      border: 1px solid rgba(100, 116, 139, 0.3);
+    }
+
+    .badge-error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .badge-crs {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    /* Notification Banner */
+    #status-banner {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .banner-info {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid #3b82f6;
+      color: #93c5fd;
+    }
+
+    .banner-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+    }
+
+    /* Map View */
+    #map-container {
+      flex: 1;
+      height: 100%;
+      position: relative;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #090d16;
+    }
+
+    /* Map Legend Overlay */
+    .map-legend {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-card);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      font-size: 0.78rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .legend-title {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .legend-color-box {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+    }
+
+    /* Leaflet Popup Custom Styling */
+    .leaflet-popup-content-wrapper {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+      border: 1px solid #334155 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+      padding: 4px;
+    }
+
+    .leaflet-popup-tip {
+      background: #1e293b !important;
+      border: 1px solid #334155 !important;
+    }
+
+    .popup-box {
+      font-size: 0.82rem;
+      line-height: 1.45;
+      max-width: 290px;
+    }
+
+    .popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .popup-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .popup-measurement {
+      margin: 8px 0;
+      padding: 8px 10px;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 8px;
+      border-left: 3px solid #38bdf8;
+    }
+
+    .popup-val {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .popup-meta {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .popup-delta {
+      display: inline-block;
+      margin-top: 3px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .popup-props {
+      max-height: 140px;
+      overflow-y: auto;
+      margin-top: 8px;
+      border-top: 1px solid #334155;
+      padding-top: 8px;
+      font-size: 0.73rem;
+    }
+
+    .popup-prop-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+      color: #cbd5e1;
+    }
+
+    .popup-prop-key {
+      color: var(--text-muted);
+      max-width: 45%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .popup-prop-val {
+      max-width: 50%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left Sidebar Controls & Metadata -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-title">
+        <div class="brand-icon">GM</div>
+        <span>Geospatial Engine</span>
+      </div>
+      <span class="status-badge badge-ok">Ready</span>
+    </div>
+
+    <div class="sidebar-content">
+      <!-- File Ingestion Dropzone -->
+      <div class="upload-zone" id="drop-zone">
+        <span class="upload-icon">📂</span>
+        <div class="upload-text" id="upload-label">Upload Shapefile (.zip) or KML</div>
+        <div class="upload-hint">Drag & drop file or click to browse</div>
+        <input type="file" id="file-input" accept=".zip,.kml" />
+      </div>
+
+      <!-- Live Status & Feedback Banner -->
+      <div id="status-banner"></div>
+
+      <!-- Dynamic Unit Selector -->
+      <div class="unit-controls">
+        <div class="control-label">
+          <span>Area Unit</span>
+          <span style="font-weight:400; text-transform:none;">Instant conversion</span>
+        </div>
+        <div class="unit-button-group" id="area-unit-group">
+          <button class="unit-btn active" data-unit="m2">m²</button>
+          <button class="unit-btn" data-unit="hectares">ha</button>
+          <button class="unit-btn" data-unit="acres">acres</button>
+          <button class="unit-btn" data-unit="km2">km²</button>
+        </div>
+      </div>
+
+      <!-- Dataset & Measurements Summary Panel -->
+      <div class="summary-card" id="summary-card">
+        <div class="control-label" style="margin-bottom:0;">Dataset Overview</div>
+        
+        <div class="stat-row">
+          <span class="stat-name">File Name</span>
+          <span class="stat-value" id="val-filename">—</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-name">Total Area</span>
+          <span class="stat-value metric-big" id="val-total-area">—</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-name">Total Linear Length</span>
+          <span class="stat-value" id="val-total-length">—</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-name">Processing Duration</span>
+          <span class="stat-value" id="val-duration" style="color:#a78bfa;">—</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-name">Coordinate System</span>
+          <span class="status-badge badge-crs" id="val-crs">None</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-name">Feature Breakdown</span>
+          <div class="badge-container" id="status-badges">
+            <span class="status-badge badge-ok" id="badge-ok">OK: 0</span>
+            <span class="status-badge badge-skipped" id="badge-skip">SKIPPED: 0</span>
+            <span class="status-badge badge-error" id="badge-err">ERROR: 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Interactive Map Canvas -->
+  <main id="map-container">
+    <div id="map"></div>
+
+    <!-- Map Geometry Legend -->
+    <div class="map-legend">
+      <div class="legend-title">Feature Types</div>
+      <div class="legend-item">
+        <div class="legend-color-box" style="background: #10b981;"></div>
+        <span>Polygon / MultiPolygon</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color-box" style="background: #0ea5e9;"></div>
+        <span>LineString / Linear</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color-box" style="background: #a855f7;"></div>
+        <span>Point / Node (Skipped)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color-box" style="background: #ef4444;"></div>
+        <span>Processing Error</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // --- Global State ---
+    let currentGeoJSONData = null;
+    let currentFileSummary = null;
+    let activeGeojsonLayer = null;
+    let selectedAreaUnit = "m2"; // "m2", "hectares", "acres", "km2"
+
+    // --- Unit Multipliers (from square meters) ---
+    const AREA_CONVERSIONS = {
+      m2: { factor: 1.0, label: "m²", decimals: 2 },
+      hectares: { factor: 0.0001, label: "ha", decimals: 4 },
+      acres: { factor: 1 / 4046.8564224, label: "acres", decimals: 4 },
+      km2: { factor: 0.000001, label: "km²", decimals: 6 }
+    };
+
+    // --- Initialize Leaflet Map ---
+    const map = L.map('map', {
+      center: [20.5937, 78.9629], // Centered on India by default
+      zoom: 5,
+      zoomControl: false
+    });
+
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    // Dark Positron CartoDB Basemap
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+
+    // --- DOM Elements ---
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const uploadLabel = document.getElementById('upload-label');
+    const statusBanner = document.getElementById('status-banner');
+    const valFilename = document.getElementById('val-filename');
+    const valTotalArea = document.getElementById('val-total-area');
+    const valTotalLength = document.getElementById('val-total-length');
+    const valDuration = document.getElementById('val-duration');
+    const valCrs = document.getElementById('val-crs');
+    const badgeOk = document.getElementById('badge-ok');
+    const badgeSkip = document.getElementById('badge-skip');
+    const badgeErr = document.getElementById('badge-err');
+
+    // --- Unit Switcher Events ---
+    document.querySelectorAll('#area-unit-group .unit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#area-unit-group .unit-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedAreaUnit = btn.dataset.unit;
+        refreshDisplays();
+      });
+    });
+
+    // --- File Drag & Drop Wiring ---
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleUpload(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleUpload(e.target.files[0]);
+      }
+    });
+
+    // --- API Communication: Upload & Polling ---
+    async function handleUpload(file) {
+      showBanner(`Uploading ${file.name} to API... <span class="spinner"></span>`, "info");
+      uploadLabel.textContent = file.name;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        // Step 1: POST to /api/files/ with ?wait=true for inline resolution
+        const postResp = await fetch("/api/files/?wait=true", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!postResp.ok) {
+          const errData = await postResp.json().catch(() => ({}));
+          throw new Error(errData.error?.message || `Upload failed with HTTP ${postResp.status}`);
+        }
+
+        const uploadData = await postResp.json();
+        const fileId = uploadData.id;
+
+        // Step 2: Poll file status if still PENDING/PROCESSING
+        let fileStatus = uploadData.status;
+        let fileMeta = null;
+
+        while (fileStatus === "PENDING" || fileStatus === "PROCESSING") {
+          showBanner(`Processing features in background... <span class="spinner"></span>`, "info");
+          await new Promise(r => setTimeout(r, 600));
+          const metaResp = await fetch(`/api/files/${fileId}/`);
+          if (!metaResp.ok) throw new Error("Failed to check dataset status");
+          fileMeta = await metaResp.json();
+          fileStatus = fileMeta.status;
+        }
+
+        if (fileStatus === "FAILED") {
+          throw new Error(fileMeta?.error || "Processing failed for this dataset.");
+        }
+
+        // Fetch detailed file metadata if not already loaded
+        if (!fileMeta) {
+          const metaResp = await fetch(`/api/files/${fileId}/`);
+          fileMeta = await metaResp.json();
+        }
+        currentFileSummary = fileMeta;
+
+        // Step 3: Fetch RFC 7946 GeoJSON Features Collection via ?format=geojson
+        showBanner(`Rendering GeoJSON layers... <span class="spinner"></span>`, "info");
+        const geojsonResp = await fetch(`/api/files/${fileId}/measurements/?format=geojson&limit=1000`);
+        if (!geojsonResp.ok) {
+          throw new Error("Failed to fetch GeoJSON measurements");
+        }
+
+        const geojson = await geojsonResp.json();
+        currentGeoJSONData = geojson;
+
+        // Render features and update statistics
+        renderGeoJSONOnMap(geojson);
+        refreshDisplays();
+        showBanner(`Successfully loaded ${fileMeta.feature_count} features!`, "info");
+        setTimeout(() => hideBanner(), 3500);
+
+      } catch (err) {
+        console.error(err);
+        showBanner(`Error: ${err.message}`, "error");
+      }
+    }
+
+    // --- Format Helper ---
+    function formatNumber(num, decimals = 2) {
+      if (num === null || num === undefined || isNaN(num)) return "—";
+      return Number(num).toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function formatArea(area_m2) {
+      if (area_m2 === null || area_m2 === undefined) return "—";
+      const conv = AREA_CONVERSIONS[selectedAreaUnit] || AREA_CONVERSIONS.m2;
+      const converted = area_m2 * conv.factor;
+      return `${formatNumber(converted, conv.decimals)} ${conv.label}`;
+    }
+
+    function formatLength(length_m) {
+      if (length_m === null || length_m === undefined) return "—";
+      if (length_m >= 1000) {
+        return `${formatNumber(length_m / 1000, 3)} km`;
+      }
+      return `${formatNumber(length_m, 2)} m`;
+    }
+
+    // --- Update Summary Dashboard ---
+    function refreshDisplays() {
+      if (!currentFileSummary) return;
+
+      valFilename.textContent = currentFileSummary.filename || "—";
+      valDuration.textContent = currentFileSummary.processing_duration_ms 
+        ? `${currentFileSummary.processing_duration_ms} ms` 
+        : "—";
+      valCrs.textContent = currentFileSummary.crs || "EPSG:4326";
+
+      const summary = currentFileSummary.summary || {};
+      valTotalArea.textContent = formatArea(summary.total_area_m2 || 0);
+      valTotalLength.textContent = formatLength(summary.total_length_m || 0);
+
+      badgeOk.textContent = `OK: ${summary.ok_count || 0}`;
+      badgeSkip.textContent = `SKIPPED: ${summary.skipped_count || 0}`;
+      badgeErr.textContent = `ERROR: ${summary.error_count || 0}`;
+
+      // Refresh popup content for any open popup
+      if (activeGeojsonLayer) {
+        activeGeojsonLayer.eachLayer(layer => {
+          if (layer.feature) {
+            layer.setPopupContent(buildPopupHTML(layer.feature));
+          }
+        });
+      }
+    }
+
+    // --- Leaflet Geometry Styling ---
+    function getFeatureStyle(feature) {
+      const geomType = feature.geometry ? feature.geometry.type : "";
+      const status = feature.properties?.status;
+
+      if (status === "ERROR") {
+        return { color: "#ef4444", weight: 3, opacity: 0.9, dashArray: "4, 4", fillColor: "#ef4444", fillOpacity: 0.25 };
+      }
+      if (status === "SKIPPED") {
+        return { color: "#64748b", weight: 2, opacity: 0.7, dashArray: "3, 3", fillColor: "#64748b", fillOpacity: 0.15 };
+      }
+
+      if (geomType.includes("Polygon")) {
+        return { color: "#059669", weight: 2, opacity: 0.9, fillColor: "#10b981", fillOpacity: 0.45 };
+      }
+      if (geomType.includes("Line")) {
+        return { color: "#0ea5e9", weight: 3.5, opacity: 0.9 };
+      }
+      return { color: "#a855f7", weight: 2, fillColor: "#a855f7", fillOpacity: 0.6 };
+    }
+
+    // --- Build Rich Feature Popup HTML ---
+    function buildPopupHTML(feature) {
+      const p = feature.properties || {};
+      const m = p.measurement || null;
+      const geomType = p.geometry_type || feature.geometry?.type || "Unknown";
+      const status = p.status || "UNKNOWN";
+
+      let statusBadgeClass = "badge-ok";
+      if (status === "SKIPPED") statusBadgeClass = "badge-skipped";
+      if (status === "ERROR") statusBadgeClass = "badge-error";
+
+      let measurementHTML = "";
+      if (m && m.kind === "area") {
+        const area_m2 = m.value;
+        const formatted = formatArea(area_m2);
+        const delta = m.delta_percent !== null && m.delta_percent !== undefined 
+          ? `<span class="popup-delta">Geodesic: ${formatArea(m.geodesic_value)} (Δ ${m.delta_percent}%)</span>` 
+          : "";
+        const perim = m.perimeter ? `<div class="popup-meta">Perimeter: ${formatLength(m.perimeter)}</div>` : "";
+        
+        measurementHTML = `
+          <div class="popup-measurement">
+            <div class="popup-val">${formatted}</div>
+            ${delta}
+            ${perim}
+            <div class="popup-meta">Method: ${m.method || "UTM"} (${m.measurement_crs || "Projected"})</div>
+          </div>
+        `;
+      } else if (m && m.kind === "length") {
+        const length_m = m.value;
+        const formatted = formatLength(length_m);
+        const delta = m.delta_percent !== null && m.delta_percent !== undefined 
+          ? `<span class="popup-delta">Geodesic: ${formatLength(m.geodesic_value)} (Δ ${m.delta_percent}%)</span>` 
+          : "";
+        
+        measurementHTML = `
+          <div class="popup-measurement">
+            <div class="popup-val">${formatted}</div>
+            ${delta}
+            <div class="popup-meta">Method: ${m.method || "UTM"} (${m.measurement_crs || "Projected"})</div>
+          </div>
+        `;
+      } else if (status === "SKIPPED") {
+        measurementHTML = `
+          <div class="popup-measurement" style="border-left-color: #64748b;">
+            <div class="popup-val" style="color:#94a3b8; font-size: 0.9rem;">Skipped by design</div>
+            <div class="popup-meta">0-dimensional points carry no area or length.</div>
+          </div>
+        `;
+      } else if (status === "ERROR") {
+        measurementHTML = `
+          <div class="popup-measurement" style="border-left-color: #ef4444;">
+            <div class="popup-val" style="color:#f87171; font-size: 0.9rem;">Measurement Error</div>
+            <div class="popup-meta">${(p.warnings && p.warnings[0]) || "Invalid geometry structure"}</div>
+          </div>
+        `;
+      }
+
+      // Feature Attributes list
+      let propsHTML = "";
+      const excludedKeys = new Set(["index", "source_layer", "geometry_type", "crs", "status", "warnings", "measurement"]);
+      const customProps = Object.entries(p).filter(([k]) => !excludedKeys.has(k));
+      if (customProps.length > 0) {
+        propsHTML = `
+          <div class="popup-props">
+            <div style="font-weight:600; margin-bottom:4px; color:#94a3b8;">Properties</div>
+            ${customProps.map(([k, v]) => `
+              <div class="popup-prop-row">
+                <span class="popup-prop-key" title="${k}">${k}</span>
+                <span class="popup-prop-val" title="${v}">${v}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="popup-box">
+          <div class="popup-header">
+            <div class="popup-title">#${p.index !== undefined ? p.index : ""} ${geomType}</div>
+            <span class="status-badge ${statusBadgeClass}">${status}</span>
+          </div>
+          ${measurementHTML}
+          ${propsHTML}
+        </div>
+      `;
+    }
+
+    // --- Render GeoJSON on Leaflet Map ---
+    function renderGeoJSONOnMap(geojson) {
+      if (activeGeojsonLayer) {
+        map.removeLayer(activeGeojsonLayer);
+      }
+
+      activeGeojsonLayer = L.geoJSON(geojson, {
+        style: getFeatureStyle,
+        pointToLayer: (feature, latlng) => {
+          const status = feature.properties?.status;
+          const color = status === "ERROR" ? "#ef4444" : "#a855f7";
+          return L.circleMarker(latlng, {
+            radius: 7,
+            fillColor: color,
+            color: "#ffffff",
+            weight: 1.5,
+            opacity: 1,
+            fillOpacity: 0.8
+          });
+        },
+        onEachFeature: (feature, layer) => {
+          layer.bindPopup(buildPopupHTML(feature));
+          
+          // Hover highlight effects
+          layer.on({
+            mouseover: (e) => {
+              const l = e.target;
+              if (l.setStyle) {
+                l.setStyle({ weight: 4, fillOpacity: 0.65 });
+              }
+            },
+            mouseout: (e) => {
+              activeGeojsonLayer.resetStyle(e.target);
+            }
+          });
+        }
+      }).addTo(map);
+
+      // Fit map viewport to feature bounds
+      const bounds = activeGeojsonLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
+      }
+    }
+
+    // --- Banner Utility ---
+    function showBanner(msg, type = "info") {
+      statusBanner.style.display = "block";
+      statusBanner.className = type === "error" ? "banner-error" : "banner-info";
+      statusBanner.innerHTML = msg;
+    }
+
+    function hideBanner() {
+      statusBanner.style.display = "none";
+    }
+  </script>
+</body>
+</html>
