@@ -1,4 +1,4 @@
-"""Services package with ingestion, readers, adaptive CRS selection, and measurement engine."""
+"""Services package with ingestion, readers, adaptive CRS selection, measurement, and processor."""
 
 from app.services.crs import (
     get_transformer,
@@ -14,6 +14,10 @@ from app.services.ingestion import (
 from app.services.measurements import (
     MeasurementResult,
     measure_feature,
+)
+from app.services.processor import (
+    process_file,
+    sanitize_json_value,
 )
 from app.services.readers import (
     DatasetReadResult,
@@ -36,4 +40,6 @@ __all__ = [
     "project_geometry",
     "MeasurementResult",
     "measure_feature",
+    "process_file",
+    "sanitize_json_value",
 ]
