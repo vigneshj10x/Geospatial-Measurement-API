@@ -227,10 +227,10 @@ def test_multipolygon_measurement() -> None:
 
 
 def test_point_geometry_returns_no_measurement() -> None:
-    """Point geometries return status OK, kind None, and no measurements."""
+    """Point geometries return status SKIPPED by design, kind None, and no measurements."""
     pt = Point(12.5, 55.6)
     res = measure_feature(pt)
-    assert res.status == "OK"
+    assert res.status == "SKIPPED"
     assert res.kind is None
     assert res.value_si is None
     assert res.units == {}

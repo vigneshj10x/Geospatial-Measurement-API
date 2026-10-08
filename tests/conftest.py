@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 from starlette.testclient import TestClient
 
+import app.db
 from app.db import Base, get_db
 
 # In-memory SQLite database for high-speed isolated tests
@@ -22,6 +23,8 @@ test_engine = create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
+
+app.db.SessionLocal.configure(bind=test_engine)
 
 TestingSessionLocal = sessionmaker(
     bind=test_engine,
