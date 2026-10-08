@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Bengaluru Cadastral and Infrastructure Survey</name>
+    <description>Realistic survey plots near Cubbon Park and Vidhana Soudha, Bengaluru</description>
+    
+    <!-- Polygon: Cubbon Park Survey Plot 101 -->
+    <Placemark>
+      <name>Cubbon Park North Plot</name>
+      <description>Heritage park municipal sector A-1</description>
+      <ExtendedData>
+        <Data name="survey_id"><value>KA-BLR-2026-101</value></Data>
+        <Data name="zone"><value>Central</value></Data>
+        <Data name="land_use"><value>Recreational Park</value></Data>
+      </ExtendedData>
+      <Polygon>
+        <extrude>1</extrude>
+        <altitudeMode>clampToGround</altitudeMode>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              77.5900,12.9750,0
+              77.5950,12.9750,0
+              77.5950,12.9800,0
+              77.5900,12.9800,0
+              77.5900,12.9750,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+
+    <!-- Polygon: Vidhana Soudha Administrative Plot 102 -->
+    <Placemark>
+      <name>Vidhana Soudha Secretariat Plot</name>
+      <description>State administrative complex</description>
+      <ExtendedData>
+        <Data name="survey_id"><value>KA-BLR-2026-102</value></Data>
+        <Data name="zone"><value>Government Reserved</value></Data>
+      </ExtendedData>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              77.5910,12.9790,0
+              77.5940,12.9790,0
+              77.5940,12.9820,0
+              77.5910,12.9820,0
+              77.5910,12.9790,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+
+    <!-- LineString: Dr. Ambedkar Veedhi Avenue -->
+    <Placemark>
+      <name>Dr. Ambedkar Veedhi Corridor</name>
+      <description>Primary arterial roadway</description>
+      <ExtendedData>
+        <Data name="road_class"><value>Arterial</value></Data>
+        <Data name="lanes"><value>6</value></Data>
+      </ExtendedData>
+      <LineString>
+        <tessellate>1</tessellate>
+        <coordinates>
+          77.5880,12.9740,0
+          77.5920,12.9780,0
+          77.5945,12.9830,0
+        </coordinates>
+      </LineString>
+    </Placemark>
+
+    <!-- Point: Geodetic Survey Benchmark -->
+    <Placemark>
+      <name>GSI Benchmark Station BLR-01</name>
+      <description>High precision geodetic GPS datum marker</description>
+      <ExtendedData>
+        <Data name="elevation_m"><value>920.5</value></Data>
+        <Data name="authority"><value>Survey of India</value></Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>77.5925,12.9775,920.5</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>
