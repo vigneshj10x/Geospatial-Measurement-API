@@ -51,27 +51,14 @@ class MeasurementResult:
     status: str = "OK"
 
 
-def _convert_area_units(area_m2: float) -> dict[str, float]:
-    """Convert square meters into standard area units rounded to 4-6 decimal places."""
-    km2_val = round(area_m2 * M2_TO_KM2, 6)
-    return {
-        "m2": round(area_m2, 4),
-        "hectares": round(area_m2 * M2_TO_HECTARES, 6),
-        "acres": round(area_m2 * M2_TO_ACRES, 6),
-        "km2": km2_val,
-        "square_kilometers": km2_val,
-    }
+from app.services.units import (
+    convert_area_units,
+    convert_length_units,
+)
 
-
-def _convert_length_units(length_m: float) -> dict[str, float]:
-    """Convert meters into standard linear distance units rounded to 4-6 decimal places."""
-    km_val = round(length_m * METERS_TO_KM, 6)
-    return {
-        "m": round(length_m, 4),
-        "km": km_val,
-        "kilometers": km_val,
-        "miles": round(length_m * METERS_TO_MILES, 6),
-    }
+# Backward-compatibility internal aliases
+_convert_area_units = convert_area_units
+_convert_length_units = convert_length_units
 
 
 def _compute_delta(projected: float, geodesic: float) -> float:
