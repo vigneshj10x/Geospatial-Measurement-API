@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.db import init_db
+from app.exceptions import register_exception_handlers
 from app.schemas import HealthResponse
 
 
@@ -34,6 +35,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Global error handlers
+register_exception_handlers(app)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
