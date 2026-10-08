@@ -77,6 +77,11 @@ class FileUploadResponse(BaseModel):
         examples=["EPSG:4326"],
     )
     links: dict[str, str] = Field(..., description="Hypermedia links to self and measurements")
+    processing_duration_ms: float | None = Field(
+        default=None,
+        description="End-to-end processing duration in milliseconds if processed synchronously",
+        examples=[45.2],
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -124,6 +129,11 @@ class FileDetailResponse(BaseModel):
     processed_at: datetime | None = Field(
         default=None, description="Timestamp when processing concluded"
     )
+    processing_duration_ms: float | None = Field(
+        default=None,
+        description="Total end-to-end processing duration in milliseconds",
+        examples=[45.2],
+    )
     geometry_type_counts: dict[str, int] = Field(
         default_factory=dict,
         description="Histogram of geometry types encountered",
@@ -146,6 +156,11 @@ class FileListItemResponse(BaseModel):
     size_bytes: int = Field(..., description="Original upload size in bytes")
     created_at: datetime = Field(..., description="Upload timestamp")
     processed_at: datetime | None = Field(default=None, description="Processing timestamp")
+    processing_duration_ms: float | None = Field(
+        default=None,
+        description="Total end-to-end processing duration in milliseconds",
+        examples=[45.2],
+    )
     links: dict[str, str] = Field(..., description="Navigation links")
 
     model_config = ConfigDict(from_attributes=True)

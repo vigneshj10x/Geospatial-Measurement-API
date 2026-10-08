@@ -1,16 +1,25 @@
 """FastAPI application entrypoint, middleware, routers, and OpenAPI documentation."""
 
+import time
+import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.files import router as files_router
 from app.config import settings
 from app.db import init_db
 from app.exceptions import register_exception_handlers
+from app.logger import logger, request_id_ctx_var, setup_logging
 from app.schemas import HealthResponse
+
+# Initialize structured logging on application load
+setup_logging()
 
 TAGS_METADATA = [
     {
@@ -26,6 +35,10 @@ TAGS_METADATA = [
             "High-precision geometric measurements (polygon area, line length), pagination, "
             "filtering, and GeoJSON export."
         ),
+    },
+    {
+        "name": "Viewer",
+        "description": "Interactive Leaflet geospatial measurement visualizer and uploader.",
     },
     {
         "name": "Health",
@@ -88,8 +101,53 @@ app.add_middleware(
 # Global uniform error handlers
 register_exception_handlers(app)
 
+
+@app.middleware("http")
+async def request_correlation_and_timing_middleware(request: Request, call_next):
+    """Correlate request with unique ID and track execution latency."""
+    incoming_id = request.headers.get("X-Request-ID")
+    request_id = incoming_id if incoming_id else uuid.uuid4().hex
+    token = request_id_ctx_var.set(request_id)
+    start_time = time.perf_counter()
+
+    try:
+        response = await call_next(request)
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Process-Time-Ms"] = str(duration_ms)
+        logger.info(
+            f"{request.method} {request.url.path} -> {response.status_code} ({duration_ms}ms)"
+        )
+        return response
+    except Exception as exc:
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        logger.error(
+            f"{request.method} {request.url.path} unhandled exception ({duration_ms}ms): {exc}"
+        )
+        raise
+    finally:
+        request_id_ctx_var.reset(token)
+
+
 # Include REST API routers
 app.include_router(files_router, prefix="/api/files", tags=["Files"])
+
+# Static directory mounting if directory exists
+static_dir = Path("static")
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/viewer", response_class=FileResponse, tags=["Viewer"])
+def get_viewer() -> FileResponse:
+    """Serve the interactive Leaflet geospatial measurement map viewer."""
+    viewer_file = Path("static/viewer.html")
+    if not viewer_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Viewer interface not found. static/viewer.html has not been initialized.",
+        )
+    return FileResponse(viewer_file, media_type="text/html")
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
@@ -111,4 +169,5 @@ def root() -> dict[str, str]:
         "docs_url": "/docs",
         "redoc_url": "/redoc",
         "health_url": "/health",
+        "viewer_url": "/viewer",
     }

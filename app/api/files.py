@@ -195,6 +195,7 @@ async def upload_file(
             feature_count=file_record.feature_count,
             crs=file_record.crs,
             links=links,
+            processing_duration_ms=file_record.processing_duration_ms,
         )
 
     # Asynchronous background path
@@ -207,6 +208,7 @@ async def upload_file(
         feature_count=0,
         crs=None,
         links=links,
+        processing_duration_ms=None,
     )
 
 
@@ -246,6 +248,7 @@ def list_files(
             size_bytes=f.size_bytes,
             created_at=f.created_at,
             processed_at=f.processed_at,
+            processing_duration_ms=f.processing_duration_ms,
             links={
                 "self": f"/api/files/{f.id}/",
                 "measurements": f"/api/files/{f.id}/measurements/",
@@ -325,6 +328,7 @@ def get_file_detail(
         error=file_record.error,
         created_at=file_record.created_at,
         processed_at=file_record.processed_at,
+        processing_duration_ms=file_record.processing_duration_ms,
         geometry_type_counts=dict(geom_counts),
         summary=summary,
     )

@@ -1,7 +1,5 @@
 """Unit conversion utilities for high-precision geospatial area and length measurements."""
 
-from typing import Any
-
 # Area conversion constants from square meters (m²)
 M2_TO_HECTARES = 1e-4
 M2_TO_ACRES = 1.0 / 4046.8564224

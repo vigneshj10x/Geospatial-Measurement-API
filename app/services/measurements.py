@@ -22,6 +22,10 @@ from app.services.crs import (
     select_measurement_crs,
     to_wgs84,
 )
+from app.services.units import (
+    convert_area_units,
+    convert_length_units,
+)
 
 # Reference WGS84 Geoid
 WGS84_GEOD = pyproj.Geod(ellps="WGS84")
@@ -33,6 +37,10 @@ M2_TO_KM2 = 1e-6
 
 METERS_TO_KM = 1e-3
 METERS_TO_MILES = 1.0 / 1609.344
+
+# Backward-compatibility internal aliases
+_convert_area_units = convert_area_units
+_convert_length_units = convert_length_units
 
 
 @dataclass
@@ -49,16 +57,6 @@ class MeasurementResult:
     delta_percent: float | None
     warnings: list[str] = field(default_factory=list)
     status: str = "OK"
-
-
-from app.services.units import (
-    convert_area_units,
-    convert_length_units,
-)
-
-# Backward-compatibility internal aliases
-_convert_area_units = convert_area_units
-_convert_length_units = convert_length_units
 
 
 def _compute_delta(projected: float, geodesic: float) -> float:

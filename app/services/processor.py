@@ -1,6 +1,7 @@
 """End-to-end geospatial processing pipeline with persistence and status management."""
 
 import math
+import time as perf_timer
 from dataclasses import asdict
 from datetime import UTC, date, datetime, time
 from decimal import Decimal
@@ -11,6 +12,7 @@ import shapely.geometry
 from sqlalchemy.orm import Session
 
 from app.exceptions import InvalidGeoFileError
+from app.logger import logger
 from app.models import FeatureRecord, UploadedFile
 from app.services.ingestion import safe_extract_zip
 from app.services.measurements import measure_feature
@@ -101,6 +103,7 @@ def process_file(
     uploaded_file.error = None
     db.commit()
 
+    start_total = perf_timer.perf_counter()
     file_failed_error: str | None = None
 
     try:
@@ -112,6 +115,7 @@ def process_file(
             )
 
         # 1. Ingestion & Reading
+        t0_read = perf_timer.perf_counter()
         if uploaded_file.file_type == "shapefile_zip":
             extract_dir = source_path.parent / "extracted"
             shp_paths = safe_extract_zip(source_path, extract_dir)
@@ -123,8 +127,14 @@ def process_file(
                 f"Unsupported file format: {uploaded_file.file_type}",
                 details={"file_type": uploaded_file.file_type},
             )
+        read_ms = round((perf_timer.perf_counter() - t0_read) * 1000, 2)
+        logger.info(
+            f"File '{file_id}' read stage complete: "
+            f"{len(read_result.features)} features in {read_ms}ms"
+        )
 
         feature_records: list[FeatureRecord] = []
+        t0_meas = perf_timer.perf_counter()
 
         # 2. Per-feature isolated processing
         for feat in read_result.features:
@@ -187,7 +197,14 @@ def process_file(
 
             feature_records.append(rec)
 
+        meas_ms = round((perf_timer.perf_counter() - t0_meas) * 1000, 2)
+        logger.info(
+            f"File '{file_id}' measurement stage complete: {len(feature_records)} features "
+            f"processed in {meas_ms}ms"
+        )
+
         # 3. Bulk insert FeatureRecords
+        t0_db = perf_timer.perf_counter()
         db.add_all(feature_records)
 
         # 4. Compute final file status
@@ -203,21 +220,34 @@ def process_file(
         else:
             uploaded_file.status = "COMPLETED"
 
+        total_ms = round((perf_timer.perf_counter() - start_total) * 1000, 2)
         uploaded_file.feature_count = len(feature_records)
         uploaded_file.crs = read_result.crs
         uploaded_file.warnings = sanitize_json_value(read_result.file_warnings)
         uploaded_file.processed_at = datetime.now(UTC)
+        uploaded_file.processing_duration_ms = total_ms
         db.commit()
         db.refresh(uploaded_file)
+
+        db_ms = round((perf_timer.perf_counter() - t0_db) * 1000, 2)
+        logger.info(
+            f"File '{file_id}' db persistence complete in {db_ms}ms. "
+            f"Total duration: {total_ms}ms, Status: {uploaded_file.status}"
+        )
         return uploaded_file
 
     except Exception as exc:
+        total_ms = round((perf_timer.perf_counter() - start_total) * 1000, 2)
         file_failed_error = str(exc)
         uploaded_file.status = "FAILED"
         uploaded_file.error = file_failed_error
         uploaded_file.processed_at = datetime.now(UTC)
+        uploaded_file.processing_duration_ms = total_ms
         db.commit()
         db.refresh(uploaded_file)
+        logger.error(
+            f"File '{file_id}' processing failed after {total_ms}ms: {exc}"
+        )
         raise
 
     finally:
@@ -226,4 +256,7 @@ def process_file(
             uploaded_file.status = "FAILED"
             uploaded_file.error = file_failed_error or "Processing aborted unexpectedly."
             uploaded_file.processed_at = datetime.now(UTC)
+            uploaded_file.processing_duration_ms = round(
+                (perf_timer.perf_counter() - start_total) * 1000, 2
+            )
             db.commit()
