@@ -38,5 +38,13 @@ class Settings(BaseModel):
 
     ALLOWED_EXTENSIONS: tuple[str, ...] = (".zip", ".kml")
 
+    # Processing threshold: files below this size are processed inline (sync);
+    # larger files are queued via BackgroundTasks unless ?wait=true is passed.
+    SYNC_PROCESSING_THRESHOLD_BYTES: int = Field(
+        default_factory=lambda: int(
+            os.getenv("SYNC_PROCESSING_THRESHOLD_BYTES", str(5 * 1024 * 1024))
+        )  # 5 MB
+    )
+
 
 settings = Settings()

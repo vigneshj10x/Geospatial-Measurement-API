@@ -95,39 +95,29 @@ def save_upload_to_storage(
     dest_path = target_dir / Path(filename).name
     total_bytes = 0
 
+    # Retrieve underlying synchronous stream (handles both FastAPI and Starlette UploadFile)
+    raw_stream = getattr(upload_file, "file", upload_file)
+    if hasattr(raw_stream, "seek"):
+        try:
+            raw_stream.seek(0)
+        except Exception:
+            pass
+
     with open(dest_path, "wb") as buffer:
-        if isinstance(upload_file, UploadFile):
-            # Stream UploadFile in chunks
-            while chunk := upload_file.file.read(CHUNK_SIZE):
-                total_bytes += len(chunk)
-                if total_bytes > settings.MAX_UPLOAD_SIZE_BYTES:
-                    buffer.close()
-                    dest_path.unlink(missing_ok=True)
-                    raise FileTooLargeError(
-                        f"Uploaded file exceeds maximum allowed size of "
-                        f"{settings.MAX_UPLOAD_SIZE_BYTES / (1024 * 1024):.1f} MB.",
-                        details={
-                            "received_bytes": total_bytes,
-                            "limit_bytes": settings.MAX_UPLOAD_SIZE_BYTES,
-                        },
-                    )
-                buffer.write(chunk)
-        else:
-            # Stream raw BinaryIO in chunks
-            while chunk := upload_file.read(CHUNK_SIZE):
-                total_bytes += len(chunk)
-                if total_bytes > settings.MAX_UPLOAD_SIZE_BYTES:
-                    buffer.close()
-                    dest_path.unlink(missing_ok=True)
-                    raise FileTooLargeError(
-                        f"Uploaded file exceeds maximum allowed size of "
-                        f"{settings.MAX_UPLOAD_SIZE_BYTES / (1024 * 1024):.1f} MB.",
-                        details={
-                            "received_bytes": total_bytes,
-                            "limit_bytes": settings.MAX_UPLOAD_SIZE_BYTES,
-                        },
-                    )
-                buffer.write(chunk)
+        while chunk := raw_stream.read(CHUNK_SIZE):
+            total_bytes += len(chunk)
+            if total_bytes > settings.MAX_UPLOAD_SIZE_BYTES:
+                buffer.close()
+                dest_path.unlink(missing_ok=True)
+                raise FileTooLargeError(
+                    f"Uploaded file exceeds maximum allowed size of "
+                    f"{settings.MAX_UPLOAD_SIZE_BYTES / (1024 * 1024):.1f} MB.",
+                    details={
+                        "received_bytes": total_bytes,
+                        "limit_bytes": settings.MAX_UPLOAD_SIZE_BYTES,
+                    },
+                )
+            buffer.write(chunk)
 
     return file_id, dest_path
 

@@ -50,18 +50,72 @@ class UnsupportedFileTypeError(AppError):
     error_code = "UNSUPPORTED_FILE_TYPE"
 
 
+class NotFoundError(AppError):
+    """Raised when a requested resource or file ID is not found."""
+
+    status_code = status.HTTP_404_NOT_FOUND
+    error_code = "NOT_FOUND"
+
+
+class ConflictError(AppError):
+    """Raised when a resource state conflicts with the operation (e.g. still processing)."""
+
+    status_code = status.HTTP_409_CONFLICT
+    error_code = "CONFLICT"
+
+
 def register_exception_handlers(app: FastAPI) -> None:
-    """Register uniform JSON error handlers on FastAPI app."""
+    """Register uniform JSON error handlers: {"error": {"code": "...", "message": "..."}}."""
+    from fastapi.exceptions import RequestValidationError
+    from starlette.exceptions import HTTPException as StarletteHTTPException
 
     @app.exception_handler(AppError)
     async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
+        error_body: dict[str, Any] = {
+            "code": exc.error_code,
+            "message": exc.message,
+        }
+        if exc.details:
+            error_body["details"] = exc.details
         return JSONResponse(
             status_code=exc.status_code,
+            content={"error": error_body},
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+        code_map = {
+            400: "BAD_REQUEST",
+            404: "NOT_FOUND",
+            405: "METHOD_NOT_ALLOWED",
+            409: "CONFLICT",
+            413: "FILE_TOO_LARGE",
+            415: "UNSUPPORTED_MEDIA_TYPE",
+            422: "VALIDATION_ERROR",
+            500: "INTERNAL_SERVER_ERROR",
+        }
+        code = code_map.get(exc.status_code, f"HTTP_{exc.status_code}")
+        msg = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": {"code": code, "message": msg}},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+        errors = exc.errors()
+        messages = []
+        for err in errors:
+            loc = " -> ".join(str(item) for item in err.get("loc", []))
+            messages.append(f"{loc}: {err.get('msg', 'invalid value')}")
+        clean_msg = "; ".join(messages) if messages else "Request validation failed."
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "error": {
-                    "code": exc.error_code,
-                    "message": exc.message,
-                    "details": exc.details,
+                    "code": "VALIDATION_ERROR",
+                    "message": clean_msg,
+                    "details": {"validation_errors": errors},
                 }
             },
         )
