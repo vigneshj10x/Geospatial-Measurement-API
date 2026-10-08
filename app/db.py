@@ -2,7 +2,7 @@
 
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
@@ -55,3 +55,14 @@ def init_db() -> None:
     DDL versioning and rollback capability.
     """
     Base.metadata.create_all(bind=engine)
+    if settings.DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            try:
+                res = conn.execute(text("PRAGMA table_info(uploaded_files);")).fetchall()
+                cols = {r[1] for r in res}
+                if cols and "processing_duration_ms" not in cols:
+                    conn.execute(
+                        text("ALTER TABLE uploaded_files ADD COLUMN processing_duration_ms FLOAT;")
+                    )
+            except Exception:
+                pass
