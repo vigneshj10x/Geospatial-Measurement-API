@@ -148,7 +148,7 @@ def measure_feature(
         # 2. Convert to WGS84 for zone selection and geodesic checks
         geom_wgs84 = to_wgs84(geom, source_crs_input)
 
-        # 3. Handle Points / MultiPoints: No measurement by spec (SKIPPED by design)
+        # 3. Handle Points / MultiPoints: No measurement by spec, status OK
         if isinstance(geom_wgs84, (Point, MultiPoint)):
             return MeasurementResult(
                 kind=None,
@@ -160,7 +160,7 @@ def measure_feature(
                 geodesic_value=None,
                 delta_percent=None,
                 warnings=[],
-                status="SKIPPED",
+                status="OK",
             )
 
         # 4. Repair invalid geometries

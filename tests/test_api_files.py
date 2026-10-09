@@ -60,8 +60,8 @@ def test_get_file_detail(client: TestClient, valid_kml_file: Path) -> None:
     assert detail["geometry_type_counts"].get("Point") == 1
 
     summary = detail["summary"]
-    assert summary["ok_count"] == 1  # Polygon measured OK
-    assert summary["skipped_count"] == 1  # Point skipped by design
+    assert summary["ok_count"] == 2  # Polygon measured OK, Point status OK
+    assert summary["skipped_count"] == 0
     assert summary["error_count"] == 0
     assert summary["total_area_m2"] > 0.0
     assert summary["total_length_m"] == 0.0

@@ -123,15 +123,15 @@ def test_mixed_geometry_types(client: TestClient) -> None:
     assert geom_counts.get("Point") == 2
 
     summary = info["summary"]
-    assert summary["ok_count"] == 3  # 2 polys + 1 line
-    assert summary["skipped_count"] == 2  # 2 points skipped by design
+    assert summary["ok_count"] == 5  # 2 polys + 1 line + 2 points
+    assert summary["skipped_count"] == 0  # Points are OK with no measurement
     assert summary["error_count"] == 0
     assert summary["total_area_m2"] > 0
     assert summary["total_length_m"] > 0
 
 
 def test_file_with_only_points(client: TestClient, tmp_path: Path) -> None:
-    """File containing only points is COMPLETED with skipped_count = N and zero area/length."""
+    """File containing only points is COMPLETED with ok_count = N and zero area/length."""
     gdf = gpd.GeoDataFrame(
         [
             {"station": "ST-A", "geometry": Point(77.59, 12.97)},
@@ -164,8 +164,8 @@ def test_file_with_only_points(client: TestClient, tmp_path: Path) -> None:
     assert info["geometry_type_counts"] == {"Point": 3}
 
     summary = info["summary"]
-    assert summary["ok_count"] == 0
-    assert summary["skipped_count"] == 3
+    assert summary["ok_count"] == 3
+    assert summary["skipped_count"] == 0
     assert summary["error_count"] == 0
     assert summary["total_area_m2"] == 0.0
     assert summary["total_length_m"] == 0.0
