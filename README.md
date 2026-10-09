@@ -1,7 +1,7 @@
 # Geospatial Measurement API
 
 [![CI Pipeline](https://github.com/vigneshj10x/Geospatial-Measurement-API/actions/workflows/ci.yml/badge.svg)](https://github.com/vigneshj10x/Geospatial-Measurement-API/actions/workflows/ci.yml)
-[![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.14-blue.svg)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.12%20%7C%203.14-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.141+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Coverage](https://img.shields.io/badge/coverage-89%25-brightgreen.svg)](https://pytest-cov.readthedocs.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -443,7 +443,7 @@ Geospatial-Measurement-API/
 ├── scripts/
 │   └── make_samples.py          # Deterministic sample dataset generator
 ├── tests/                       # Complete pytest suite (70 tests, 89% coverage)
-├── .github/workflows/ci.yml     # GitHub Actions CI workflow (linting + coverage on Python 3.11)
+├── .github/workflows/ci.yml     # GitHub Actions CI workflow (linting + coverage on Python 3.12)
 ├── Dockerfile                   # Multi-stage hardened Debian-slim image with non-root user
 ├── docker-compose.yml           # Compose stack with persistent storage volumes
 ├── Makefile                     # Standard developer commands (install, run, test, lint, docker-up)

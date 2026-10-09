@@ -3,7 +3,7 @@ name = "geospatial-measurement-api"
 version = "0.1.0"
 description = "Geospatial File Measurement API using FastAPI, Shapely, PyProj, GeoPandas, and PyOgrio"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.141.1",
     "uvicorn==0.52.4",
@@ -26,7 +26,7 @@ dev = [
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
