@@ -134,8 +134,18 @@
     }
 
     if (tileLayer) {
-      const basemap = theme === 'dark' ? BASEMAPS.canvasDark : BASEMAPS.osm;
-      tileLayer.setUrl(basemap.url);
+      tileLayer.setUrl(BASEMAPS.osm.url);
+    }
+
+    // Immediately re-style all features on the map so shapes remain bright and visible
+    if (state.layersByIndex) {
+      state.layersByIndex.forEach((layer, idx) => {
+        const feat = state.featuresByIndex.get(idx);
+        if (layer && feat) {
+          const isSelected = state.selectedFeatureIndex === idx;
+          styleLayer(layer, feat, isSelected, false);
+        }
+      });
     }
   }
 
@@ -158,12 +168,10 @@
 
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    const initialBasemap = currentTheme === 'dark' ? BASEMAPS.canvasDark : BASEMAPS.osm;
-
     // Full-color real map default (OpenStreetMap with green parks, water, roads)
-    tileLayer = L.tileLayer(initialBasemap.url, {
-      maxZoom: initialBasemap.maxZoom,
-      attribution: initialBasemap.attribution,
+    tileLayer = L.tileLayer(BASEMAPS.osm.url, {
+      maxZoom: BASEMAPS.osm.maxZoom,
+      attribution: BASEMAPS.osm.attribution,
     }).addTo(map);
 
     // Basemap selector with Satellite, Topo, and Canvas alternatives
@@ -198,48 +206,49 @@
   function getNormalStyle(feature) {
     const geomType = feature.geometry?.type || '';
     const status = feature.properties?.status;
+    const isDark = currentTheme === 'dark';
 
     if (status === 'ERROR') {
       return {
-        color: '#791F1F',
-        weight: 1.5,
+        color: isDark ? '#F87171' : '#791F1F',
+        weight: 2.0,
         dashArray: '4 4',
-        fillColor: '#FCEBEB',
-        fillOpacity: 0.2,
+        fillColor: isDark ? '#7F1D1D' : '#FCEBEB',
+        fillOpacity: isDark ? 0.35 : 0.2,
       };
     }
     if (status === 'SKIPPED') {
       return {
-        color: '#7A4A00',
-        weight: 1.5,
+        color: isDark ? '#FBBF24' : '#7A4A00',
+        weight: 2.0,
         dashArray: '4 4',
-        fillColor: '#FDF3E1',
-        fillOpacity: 0.15,
+        fillColor: isDark ? '#78350F' : '#FDF3E1',
+        fillOpacity: isDark ? 0.3 : 0.15,
       };
     }
 
     if (geomType.includes('Polygon')) {
       return {
-        color: '#1F3A5F',
-        weight: 1.5,
+        color: isDark ? '#60A5FA' : '#1F3A5F',
+        weight: isDark ? 2.0 : 1.5,
         opacity: 1,
-        fillColor: '#1F3A5F',
-        fillOpacity: 0.12,
+        fillColor: isDark ? '#3B82F6' : '#1F3A5F',
+        fillOpacity: isDark ? 0.25 : 0.12,
         dashArray: null,
       };
     }
     if (geomType.includes('Line')) {
       return {
-        color: '#1F3A5F',
-        weight: 2.5,
+        color: isDark ? '#60A5FA' : '#1F3A5F',
+        weight: isDark ? 3.0 : 2.5,
         opacity: 1,
         dashArray: '7 4',
       };
     }
     return {
-      radius: 5,
-      fillColor: '#FFFFFF',
-      color: '#1B2430',
+      radius: isDark ? 6 : 5,
+      fillColor: isDark ? '#60A5FA' : '#FFFFFF',
+      color: isDark ? '#FFFFFF' : '#1B2430',
       weight: 2,
       opacity: 1,
       fillOpacity: 1,
@@ -249,36 +258,38 @@
   function getHoverStyle(feature) {
     const geomType = feature.geometry?.type || '';
     if (geomType.includes('Polygon')) {
-      return { weight: 2.0, fillOpacity: 0.18 };
+      return { weight: 2.5, fillOpacity: 0.3 };
     }
     if (geomType.includes('Line')) {
-      return { weight: 3.5 };
+      return { weight: 4.0 };
     }
-    return { radius: 7 };
+    return { radius: 8 };
   }
 
   function getSelectedStyle(feature) {
     const geomType = feature.geometry?.type || '';
+    const isDark = currentTheme === 'dark';
+
     if (geomType.includes('Polygon')) {
       return {
-        color: '#B86E00',
-        weight: 2.5,
-        fillColor: '#E08A00',
-        fillOpacity: 0.26,
+        color: isDark ? '#F59E0B' : '#B86E00',
+        weight: 3.0,
+        fillColor: '#F59E0B',
+        fillOpacity: isDark ? 0.38 : 0.26,
         dashArray: null,
       };
     }
     if (geomType.includes('Line')) {
       return {
-        color: '#B86E00',
-        weight: 3.0,
+        color: isDark ? '#F59E0B' : '#B86E00',
+        weight: 3.5,
         dashArray: null,
       };
     }
     return {
-      radius: 6,
-      fillColor: '#E08A00',
-      color: '#B86E00',
+      radius: 7,
+      fillColor: '#F59E0B',
+      color: isDark ? '#FFFFFF' : '#B86E00',
       weight: 2.5,
       fillOpacity: 1,
     };

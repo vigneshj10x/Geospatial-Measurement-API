@@ -35,24 +35,33 @@
 }
 
 [data-theme="dark"] {
-  --bg-map: #13171F;
-  --panel: #1D232C;
-  --border: #2D3748;
-  --text: #F1F5F9;
+  --bg-map: #0F172A;
+  --panel: #1E293B;
+  --border: #334155;
+  --text: #F8FAFC;
   --text-2: #94A3B8;
-  --navy: #3B82F6;
+  --navy: #60A5FA;
   --navy-tint: #1E293B;
   --saffron: #F59E0B;
-  --saffron-line: #D97706;
-  --saffron-tint: #2E2413;
+  --saffron-line: #F59E0B;
+  --saffron-tint: #382B14;
   --saffron-text: #FBBF24;
   --ok-bg: #142E1B;
   --ok-text: #86EFAC;
-  --warn-bg: #2E2413;
+  --warn-bg: #382B14;
   --warn-text: #FDE047;
-  --err-bg: #331414;
+  --err-bg: #381A1A;
   --err-text: #FCA5A5;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* High-contrast crisp dark mode basemap filter for OpenStreetMap */
+[data-theme="dark"] .leaflet-tile-pane {
+  filter: brightness(0.8) invert(1) hue-rotate(180deg) contrast(1.15) saturate(1.2);
+}
+
+[data-theme="dark"] .leaflet-tile-pane img {
+  opacity: 0.9;
 }
 
 * {
