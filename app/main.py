@@ -133,15 +133,15 @@ async def request_correlation_and_timing_middleware(request: Request, call_next)
 app.include_router(files_router, prefix="/api/files", tags=["Files"])
 
 # Static directory mounting if directory exists
-static_dir = Path("static")
+static_dir = Path("app/static") if Path("app/static").exists() else Path("static")
 if static_dir.exists():
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
 @app.get("/viewer", response_class=FileResponse, tags=["Viewer"])
 def get_viewer() -> FileResponse:
     """Serve the interactive Leaflet geospatial measurement map viewer."""
-    viewer_file = Path("static/viewer.html")
+    viewer_file = Path("app/static/viewer.html") if Path("app/static/viewer.html").exists() else Path("static/viewer.html")
     if not viewer_file.exists():
         raise HTTPException(
             status_code=404,

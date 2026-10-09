@@ -1,0 +1,59 @@
+:root {
+  --bg-map: #F2F4F1;
+  --panel: #FFFFFF;
+  --border: #D5D9DE;
+  --text: #1B2430;
+  --text-2: #5B6675;
+  --navy: #1F3A5F;
+  --navy-tint: #E6ECF3;
+  --saffron: #E08A00;
+  --saffron-line: #B86E00;
+  --saffron-tint: #FDF3E1;
+  --saffron-text: #7A4A00;
+  --ok-bg: #E3F0DF;
+  --ok-text: #27500A;
+  --warn-bg: #FDF3E1;
+  --warn-text: #7A4A00;
+  --err-bg: #FCEBEB;
+  --err-text: #791F1F;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-base: 13px;
+  --font-size-sm: 11px;
+  --font-size-lg: 24px;
+
+  --radius-panel: 10px;
+  --radius-inspector: 12px;
+  --radius-chip: 7px;
+  --radius-btn: 7px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--text);
+  background-color: var(--bg-map);
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular-nums, .num {
+  font-variant-numeric: tabular-nums;
+}
