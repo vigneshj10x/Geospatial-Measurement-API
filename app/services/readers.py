@@ -1,10 +1,11 @@
-"""Unified geospatial readers for Shapefiles and KML files with Z-coordinate stripping."""
+from __future__ import annotations
 
 import math
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from xml.etree.ElementTree import Element
 
 import defusedxml.ElementTree as ET
 import pandas as pd
@@ -103,8 +104,8 @@ def _parse_kml_coordinates(coords_text: str | None) -> list[tuple[float, ...]]:
 
 
 def _find_elem(
-    parent: ET.Element, *queries: str, ns: dict[str, str] | None = None
-) -> ET.Element | None:
+    parent: Element, *queries: str, ns: dict[str, str] | None = None
+) -> Element | None:
     """Safely find sub-element avoiding ElementTree boolean truthiness pitfall."""
     for q in queries:
         el = parent.find(q, ns) if ns else parent.find(q)
@@ -113,7 +114,7 @@ def _find_elem(
     return None
 
 
-def _xml_parse_geometry(elem: ET.Element, ns: dict[str, str]) -> BaseGeometry | None:
+def _xml_parse_geometry(elem: Element, ns: dict[str, str]) -> BaseGeometry | None:
     """
     Fallback geometry parser using XML ElementTree for Point, LineString, Polygon, MultiGeometry.
     Note: Serves as a pure-Python fallback when GDAL/pyogrio KML drivers are unavailable.
