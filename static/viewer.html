@@ -594,12 +594,23 @@
 
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // Dark Positron CartoDB Basemap
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
+    // OpenStreetMap Basemap (100% Free, Open-Source, No API Key Required)
+    const osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(map);
+
+    // Satellite Imagery Layer (Esri World Imagery, 100% Free, No API Key Required)
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+      maxZoom: 18
+    });
+
+    // Basemap Layer Switcher
+    L.control.layers({
+      "OpenStreetMap": osmLayer,
+      "Satellite (Esri)": satelliteLayer
+    }, null, { position: 'topright' }).addTo(map);
 
     // --- DOM Elements ---
     const dropZone = document.getElementById('drop-zone');
