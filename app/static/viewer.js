@@ -947,12 +947,23 @@
       }
       state.file = fileMeta;
 
-      // Step 3: Fetch GeoJSON measurements
-      const geojsonRes = await fetch(`/api/files/${fileId}/measurements/?format=geojson&limit=5000`);
-      if (!geojsonRes.ok) {
+      // Step 3: Fetch GeoJSON measurements (paginated if > 1000)
+      const firstRes = await fetch(`/api/files/${fileId}/measurements/?format=geojson&limit=1000&offset=0`);
+      if (!firstRes.ok) {
         throw new Error('Failed to retrieve GeoJSON measurements.');
       }
-      const geojson = await geojsonRes.json();
+      const geojson = await firstRes.json();
+      const totalFeatures = geojson.total || (geojson.features ? geojson.features.length : 0);
+
+      let currentOffset = 1000;
+      while (geojson.features && geojson.features.length < totalFeatures) {
+        const nextRes = await fetch(`/api/files/${fileId}/measurements/?format=geojson&limit=1000&offset=${currentOffset}`);
+        if (!nextRes.ok) break;
+        const nextData = await nextRes.json();
+        if (!nextData.features || nextData.features.length === 0) break;
+        geojson.features.push(...nextData.features);
+        currentOffset += nextData.features.length;
+      }
       state.geojsonData = geojson;
 
       // Hide empty card and show complete UI
