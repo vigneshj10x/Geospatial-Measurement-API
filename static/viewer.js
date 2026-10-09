@@ -1012,10 +1012,34 @@
     }
   }
 
+  function setupTabKeyboardNav() {
+    const tabsList = document.querySelector('.inspector-tabs');
+    const tabButtons = [tabBtnFeatures, tabBtnMeasure, tabBtnVerify];
+    const tabNames = ['features', 'measure', 'verify'];
+
+    tabsList.addEventListener('keydown', (e) => {
+      let currentIndex = tabButtons.indexOf(document.activeElement);
+      if (currentIndex === -1) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextIndex = (currentIndex + 1) % tabButtons.length;
+        setActiveTab(tabNames[nextIndex]);
+        tabButtons[nextIndex].focus();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prevIndex = (currentIndex - 1 + tabButtons.length) % tabButtons.length;
+        setActiveTab(tabNames[prevIndex]);
+        tabButtons[prevIndex].focus();
+      }
+    });
+  }
+
   // --- Unit Switching ---
   function setUnit(unit) {
     if (!AREA_CONVERSIONS[unit]) return;
     state.selectedUnit = unit;
+    announce(`Unit changed to ${AREA_CONVERSIONS[unit].label}`);
     document.querySelectorAll('.unit-btn').forEach(btn => {
       const isCurrent = btn.dataset.unit === unit;
       btn.classList.toggle('active', isCurrent);
@@ -1151,6 +1175,7 @@
     });
 
     setupListKeyboardNav();
+    setupTabKeyboardNav();
   }
 
   // --- Initialization ---
