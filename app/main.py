@@ -140,8 +140,8 @@ if static_dir.exists():
 
 @app.get("/viewer", response_class=FileResponse, tags=["Viewer"])
 def get_viewer() -> FileResponse:
-    """Serve the interactive Leaflet geospatial measurement map viewer."""
-    viewer_file = Path("app/static/viewer.html") if Path("app/static/viewer.html").exists() else Path("static/viewer.html")
+    viewer_app = Path("app/static/viewer.html")
+    viewer_file = viewer_app if viewer_app.exists() else Path("static/viewer.html")
     if not viewer_file.exists():
         raise HTTPException(
             status_code=404,
