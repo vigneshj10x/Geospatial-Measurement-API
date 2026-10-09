@@ -787,8 +787,85 @@
     }
   }
 
+  // --- UI Banner & State Helpers ---
+  const emptyCard = document.getElementById('empty-card');
+  const emptyUploadBtn = document.getElementById('empty-upload-btn');
+  const dragOverlay = document.getElementById('drag-overlay');
+  const toolbarProgress = document.getElementById('toolbar-progress');
+  const inspectorBanner = document.getElementById('inspector-banner');
+  const bannerText = document.getElementById('banner-text');
+  const bannerCloseBtn = document.getElementById('banner-close-btn');
+  const a11yAnnouncer = document.getElementById('a11y-announcer');
+
+  function announce(msg) {
+    if (a11yAnnouncer) {
+      a11yAnnouncer.textContent = msg;
+    }
+  }
+
+  function showBanner(text, type = 'error', actionBtn = null) {
+    inspectorBanner.style.display = 'flex';
+    inspectorBanner.className = `inspector-banner banner-${type}`;
+    bannerText.textContent = '';
+
+    const msgSpan = document.createElement('span');
+    msgSpan.textContent = text;
+    bannerText.appendChild(msgSpan);
+
+    if (actionBtn) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-filter-issues';
+      btn.textContent = actionBtn.label;
+      btn.addEventListener('click', actionBtn.onClick);
+      bannerText.appendChild(btn);
+    }
+
+    announce(`${type}: ${text}`);
+  }
+
+  function hideBanner() {
+    inspectorBanner.style.display = 'none';
+  }
+
+  function showLoading(isLoading) {
+    state.isLoading = isLoading;
+    toolbarProgress.style.display = isLoading ? 'block' : 'none';
+
+    if (isLoading) {
+      // Render skeleton rows in features list
+      featuresList.textContent = '';
+      for (let i = 0; i < 6; i++) {
+        const skel = document.createElement('div');
+        skel.className = 'skeleton-row';
+
+        const left = document.createElement('div');
+        left.className = 'skeleton-left';
+
+        const iconBox = document.createElement('div');
+        iconBox.className = 'skeleton-box skeleton-icon';
+        left.appendChild(iconBox);
+
+        const textBox = document.createElement('div');
+        textBox.className = 'skeleton-box skeleton-text';
+        left.appendChild(textBox);
+
+        skel.appendChild(left);
+
+        const valBox = document.createElement('div');
+        valBox.className = 'skeleton-box skeleton-val';
+        skel.appendChild(valBox);
+
+        featuresList.appendChild(skel);
+      }
+    }
+  }
+
   // --- API Communication: Upload & Polling ---
   async function handleFileUpload(file) {
+    hideBanner();
+    showLoading(true);
+    announce(`Uploading ${file.name}...`);
     toolbarFilename.textContent = file.name;
     toolbarFilename.title = file.name;
 
@@ -817,11 +894,13 @@
 
       while (fileStatus === 'PENDING' || fileStatus === 'PROCESSING') {
         if (Date.now() - startTime > 120000) {
-          throw new Error('Processing timed out after 2 minutes.');
+          throw new Error('Processing timed out after 2 minutes. The file may be too large or the server is busy.');
         }
         await new Promise(r => setTimeout(r, 1000));
         const metaRes = await fetch(`/api/files/${fileId}/`);
-        if (!metaRes.ok) throw new Error('Failed checking processing status.');
+        if (!metaRes.ok) {
+          throw new Error('Failed checking processing status.');
+        }
         fileMeta = await metaRes.json();
         fileStatus = fileMeta.status;
       }
@@ -844,20 +923,43 @@
       const geojson = await geojsonRes.json();
       state.geojsonData = geojson;
 
-      // Render map, filters, list, and summary
+      // Hide empty card and show complete UI
+      if (emptyCard) emptyCard.style.display = 'none';
       railDownloadBtn.disabled = false;
+
+      // Check PARTIAL status
+      if (fileMeta.status === 'PARTIAL') {
+        showBanner("Some features couldn't be measured", 'partial', {
+          label: 'Filter issues',
+          onClick: () => {
+            setActiveTab('features');
+            setFilter('issues');
+          },
+        });
+      }
+
+      // Render map, filters, list, and summary
       renderGeoJSONOnMap(geojson);
       updateFilterCounts();
       applyFilter();
       refreshStatsStrip();
+      updateVerifyFooter();
 
       // If features exist, select the first one by default
       if (state.filteredIndices.length > 0) {
         selectFeature(state.filteredIndices[0], false);
       }
+
+      announce(`Loaded ${fileMeta.feature_count} features.`);
     } catch (err) {
       console.error('Error during upload:', err);
-      alert(err.message || 'Error uploading file');
+      showBanner(err.message || 'Error uploading file.', 'error');
+      // If error occurred before loading, restore empty list or reset
+      if (!state.file) {
+        featuresList.textContent = '';
+      }
+    } finally {
+      showLoading(false);
     }
   }
 
@@ -1001,6 +1103,38 @@
     const triggerUpload = () => fileInput.click();
     topUploadBtn.addEventListener('click', triggerUpload);
     railUploadBtn.addEventListener('click', triggerUpload);
+    if (emptyUploadBtn) emptyUploadBtn.addEventListener('click', triggerUpload);
+    if (bannerCloseBtn) bannerCloseBtn.addEventListener('click', hideBanner);
+
+    // Global Drag & Drop handling
+    let dragCounter = 0;
+    window.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dragCounter++;
+      if (dragOverlay) dragOverlay.style.display = 'flex';
+    });
+
+    window.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter <= 0 && dragOverlay) {
+        dragCounter = 0;
+        dragOverlay.style.display = 'none';
+      }
+    });
+
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      if (dragOverlay) dragOverlay.style.display = 'none';
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFileUpload(e.dataTransfer.files[0]);
+      }
+    });
 
     fileInput.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {

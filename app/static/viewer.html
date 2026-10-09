@@ -53,7 +53,7 @@
 
     <!-- Top Toolbar -->
     <header class="top-toolbar" aria-label="Viewer Controls">
-      <div class="toolbar-filename" id="toolbar-filename" title="Loaded file">india_survey_plots.kml</div>
+      <div class="toolbar-filename" id="toolbar-filename" title="Loaded file">No file loaded</div>
       <div class="unit-segmented-control area-unit-group" role="radiogroup" aria-label="Area unit selector">
         <button type="button" class="unit-btn" data-unit="m2" role="radio" aria-checked="false" aria-label="Square meters">m²</button>
         <button type="button" class="unit-btn active" data-unit="ha" role="radio" aria-checked="true" aria-label="Hectares">ha</button>
@@ -64,10 +64,42 @@
         <i class="ti ti-upload" aria-hidden="true"></i>
         <span>Upload</span>
       </button>
+      <!-- Thin progress bar under toolbar -->
+      <div class="toolbar-progress-bar" id="toolbar-progress" style="display:none;" role="progressbar" aria-label="Processing progress"></div>
     </header>
+
+    <!-- Centered Empty State Card on Map -->
+    <div class="empty-card" id="empty-card" role="region" aria-label="Upload survey file">
+      <div class="empty-card-icon">
+        <i class="ti ti-map-pin" aria-hidden="true"></i>
+      </div>
+      <h2 class="empty-card-title">Upload a survey file</h2>
+      <p class="empty-card-sub">KML or a zipped Shapefile</p>
+      <button type="button" class="btn-primary-filled" id="empty-upload-btn" aria-label="Select a survey file">
+        <i class="ti ti-upload" aria-hidden="true"></i>
+        <span>Select file</span>
+      </button>
+    </div>
+
+    <!-- Fullscreen Drag and Drop Overlay -->
+    <div class="drag-overlay" id="drag-overlay" style="display:none;" aria-hidden="true">
+      <div class="drag-overlay-card">
+        <i class="ti ti-file-upload drag-overlay-icon" aria-hidden="true"></i>
+        <div class="drag-overlay-text">Drop a KML or zipped shapefile</div>
+      </div>
+    </div>
+
+    <!-- Accessibility live announcer -->
+    <div id="a11y-announcer" class="sr-only" aria-live="polite"></div>
 
     <!-- Right Inspector -->
     <aside class="inspector-panel" id="inspector-panel" aria-label="Inspector">
+      <!-- Dismissible Banner at Top of Inspector -->
+      <div class="inspector-banner" id="inspector-banner" style="display:none;" role="alert">
+        <div class="banner-content" id="banner-text"></div>
+        <button type="button" class="banner-close-btn" id="banner-close-btn" aria-label="Dismiss banner">&times;</button>
+      </div>
+
       <!-- Tabs Header -->
       <div class="inspector-tabs" role="tablist" aria-label="Inspector tabs">
         <button type="button" class="tab-btn active" id="tab-btn-features" role="tab" aria-selected="true" aria-controls="panel-features" tabindex="0">Features</button>

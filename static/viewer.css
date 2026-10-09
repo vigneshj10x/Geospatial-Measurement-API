@@ -152,6 +152,33 @@ body {
   align-items: center;
   gap: 12px;
   padding: 5px 10px;
+  overflow: hidden;
+}
+
+.toolbar-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--navy-tint);
+  overflow: hidden;
+}
+
+.toolbar-progress-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 40%;
+  background: var(--navy);
+  animation: indeterminate-progress 1.2s infinite ease-in-out;
+}
+
+@keyframes indeterminate-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
 }
 
 .toolbar-filename {
@@ -162,6 +189,192 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Empty State Card */
+.empty-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow);
+  padding: 24px 32px;
+  text-align: center;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 320px;
+}
+
+.empty-card-icon {
+  font-size: 28px;
+  color: var(--navy);
+  margin-bottom: 2px;
+}
+
+.empty-card-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.empty-card-sub {
+  font-size: var(--font-size-sm);
+  color: var(--text-2);
+  margin-bottom: 12px;
+}
+
+/* Fullscreen Drag Overlay */
+.drag-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 58, 95, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.drag-overlay-card {
+  background: var(--panel);
+  border: 2px dashed var(--navy);
+  border-radius: var(--radius-inspector);
+  padding: 32px 48px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.drag-overlay-icon {
+  font-size: 40px;
+  color: var(--navy);
+}
+
+.drag-overlay-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* Inspector Banner */
+.inspector-banner {
+  border-radius: var(--radius-chip);
+  padding: 8px 10px;
+  margin: 8px 12px 0 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inspector-banner.banner-error {
+  background: var(--err-bg);
+  color: var(--err-text);
+  border: 1px solid #F5C6C6;
+}
+
+.inspector-banner.banner-partial {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border: 1px solid #F7D7A0;
+}
+
+.banner-content {
+  flex: 1;
+}
+
+.banner-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.8;
+}
+
+.banner-close-btn:hover {
+  opacity: 1;
+}
+
+.btn-filter-issues {
+  background: var(--warn-text);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 11px;
+  margin-left: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* Skeleton Rows for Loading State */
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  border-radius: var(--radius-btn);
+  animation: pulse-skeleton 1.5s infinite ease-in-out;
+}
+
+.skeleton-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.skeleton-box {
+  background: var(--navy-tint);
+  border-radius: 4px;
+}
+
+.skeleton-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.skeleton-text {
+  width: 80px;
+  height: 14px;
+}
+
+.skeleton-val {
+  width: 50px;
+  height: 14px;
+}
+
+@keyframes pulse-skeleton {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 .unit-segmented-control {
