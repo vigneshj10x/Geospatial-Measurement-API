@@ -85,27 +85,37 @@
   const statsMaxDelta = document.getElementById('stats-max-delta');
   const statsFeatures = document.getElementById('stats-features');
 
-  // --- Free Basemap Providers (100% Free, No API Key Required) ---
+  // --- Basemap Providers (100% Free, Full-Color Real Maps, No API Key Required) ---
   const BASEMAPS = {
-    canvasLight: {
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-      maxZoom: 16,
-    },
-    canvasDark: {
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-      maxZoom: 16,
-    },
     osm: {
+      name: 'OpenStreetMap (Real Map)',
       url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
     },
     satellite: {
+      name: 'Satellite Imagery',
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
       maxZoom: 18,
+    },
+    topo: {
+      name: 'Topographic Map',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, USGS',
+      maxZoom: 19,
+    },
+    canvasLight: {
+      name: 'Muted Light Canvas',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+      maxZoom: 16,
+    },
+    canvasDark: {
+      name: 'Dark Canvas',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+      maxZoom: 16,
     },
   };
 
@@ -124,7 +134,7 @@
     }
 
     if (tileLayer) {
-      const basemap = theme === 'dark' ? BASEMAPS.canvasDark : BASEMAPS.canvasLight;
+      const basemap = theme === 'dark' ? BASEMAPS.canvasDark : BASEMAPS.osm;
       tileLayer.setUrl(basemap.url);
     }
   }
@@ -148,29 +158,34 @@
 
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    const initialBasemap = currentTheme === 'dark' ? BASEMAPS.canvasDark : BASEMAPS.canvasLight;
+    const initialBasemap = currentTheme === 'dark' ? BASEMAPS.canvasDark : BASEMAPS.osm;
 
-    // Free Canvas basemap with zero API key requirement
+    // Full-color real map default (OpenStreetMap with green parks, water, roads)
     tileLayer = L.tileLayer(initialBasemap.url, {
       maxZoom: initialBasemap.maxZoom,
       attribution: initialBasemap.attribution,
     }).addTo(map);
 
-    // Optional free layer switcher for OpenStreetMap & Satellite
-    const osmLayer = L.tileLayer(BASEMAPS.osm.url, {
-      maxZoom: BASEMAPS.osm.maxZoom,
-      attribution: BASEMAPS.osm.attribution,
-    });
+    // Basemap selector with Satellite, Topo, and Canvas alternatives
     const satLayer = L.tileLayer(BASEMAPS.satellite.url, {
       maxZoom: BASEMAPS.satellite.maxZoom,
       attribution: BASEMAPS.satellite.attribution,
     });
+    const topoLayer = L.tileLayer(BASEMAPS.topo.url, {
+      maxZoom: BASEMAPS.topo.maxZoom,
+      attribution: BASEMAPS.topo.attribution,
+    });
+    const canvasLayer = L.tileLayer(BASEMAPS.canvasLight.url, {
+      maxZoom: BASEMAPS.canvasLight.maxZoom,
+      attribution: BASEMAPS.canvasLight.attribution,
+    });
 
     L.control.layers(
       {
-        'Canvas Base': tileLayer,
-        'OpenStreetMap': osmLayer,
+        'Real Map (OpenStreetMap)': tileLayer,
         'Satellite Imagery': satLayer,
+        'Topographic Map': topoLayer,
+        'Muted Canvas': canvasLayer,
       },
       null,
       { position: 'topright' }
