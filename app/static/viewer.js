@@ -85,6 +85,34 @@
   const statsMaxDelta = document.getElementById('stats-max-delta');
   const statsFeatures = document.getElementById('stats-features');
 
+  // --- Theme State & Toggle ---
+  const themeIcon = document.getElementById('theme-icon');
+  let currentTheme = localStorage.getItem('viewer_theme') || 'light';
+  let tileLayer = null;
+
+  function applyTheme(theme) {
+    currentTheme = theme;
+    localStorage.setItem('viewer_theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+
+    if (themeIcon) {
+      themeIcon.className = theme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+    }
+
+    if (tileLayer) {
+      const tileUrl = theme === 'dark'
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+      tileLayer.setUrl(tileUrl);
+    }
+  }
+
+  function toggleTheme() {
+    const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+    announce(`Theme switched to ${nextTheme} mode.`);
+  }
+
   // --- Map & Layers ---
   let map = null;
   let activeGeojsonGroup = null;
@@ -98,8 +126,12 @@
 
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // CARTO Positron light tiles with attribution
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    const tileUrl = currentTheme === 'dark'
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+    // CARTO Positron / Dark Matter tiles with attribution
+    tileLayer = L.tileLayer(tileUrl, {
       subdomains: 'abcd',
       maxZoom: 20,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -1123,6 +1155,7 @@
 
     railFeaturesBtn.addEventListener('click', () => setActiveTab('features'));
     railDownloadBtn.addEventListener('click', downloadGeoJSON);
+    if (railThemeBtn) railThemeBtn.addEventListener('click', toggleTheme);
 
     const triggerUpload = () => fileInput.click();
     topUploadBtn.addEventListener('click', triggerUpload);
@@ -1180,6 +1213,7 @@
 
   // --- Initialization ---
   document.addEventListener('DOMContentLoaded', () => {
+    applyTheme(currentTheme);
     initMap();
     setupListeners();
   });
