@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: geospatial-measurement-api
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: SYNC_PROCESSING_THRESHOLD_BYTES
+        value: 5242880
+      - key: DATABASE_URL
+        value: sqlite:////app/data/geospatial.db
